@@ -3,7 +3,9 @@ package com.algaworks.algasensors.temperature.processing.api.controller;
 import com.algaworks.algasensors.temperature.processing.api.model.TemperatureLogOutput;
 import com.algaworks.algasensors.temperature.processing.common.IdGenerator;
 import io.hypersistence.tsid.TSID;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -11,10 +13,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
 
+import static com.algaworks.algasensors.temperature.processing.infrastructure.rabbitmq.RabbitMqConfig.FANOUT_EXCHEAGE_NAME;
+
 @RestController
 @RequestMapping("/api/sensors/{sensorId}/temperatures/data")
 @Slf4j
+@RequiredArgsConstructor
 public class TemperatureProcessingController {
+
+    private final RabbitTemplate rabbitTemplate;
 
     @PostMapping(consumes = MediaType.TEXT_PLAIN_VALUE)
     public void data(@PathVariable TSID sensorId, @RequestBody String input) {
@@ -31,13 +38,19 @@ public class TemperatureProcessingController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
 
-        TemperatureLogOutput.TemperatureLogOutputBuilder temperatureLogOutputBuilder = TemperatureLogOutput.builder()
+        TemperatureLogOutput temperatureLogOutput = TemperatureLogOutput.builder()
                 .id(IdGenerator.generateTimeBaseUUID())
                 .sensorId(sensorId)
                 .value(temperature)
-                .registeredAt(OffsetDateTime.now());
+                .registeredAt(OffsetDateTime.now()).build();
 
-        log.info(temperatureLogOutputBuilder.toString());
+        log.info(temperatureLogOutput.toString());
+
+        String exchange = FANOUT_EXCHEAGE_NAME;
+        String routingKey = "";
+        Object messagePayload = temperatureLogOutput;
+
+        rabbitTemplate.convertAndSend(exchange, routingKey, messagePayload);
 
     }
 
