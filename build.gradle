@@ -35,6 +35,7 @@ idea {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.apache.commons:commons-lang3:3.17.0'
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 	implementation 'com.fasterxml.uuid:java-uuid-generator:5.1.0'
 	implementation 'io.hypersistence:hypersistence-tsid:2.1.4'
 	compileOnly 'org.projectlombok:lombok'
